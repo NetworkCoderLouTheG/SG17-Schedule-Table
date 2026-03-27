@@ -17,9 +17,9 @@
         .instructionText {
             font-size: 16px;
             margin: 0 0 20px 0;
-            padding: 10px;
-            background: #eee;
-            border: 1px solid black;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #ccc;
         }
         .controls label {
             display: inline-block;
@@ -29,10 +29,10 @@
         }
         .controls input[type="text"] {
             display: inline-block;
-            padding: 5px;
+            padding: 6px;
             font-size: 16px;
             margin: 0 0 10px 0;
-            border: 1px solid black;
+            border: 1px solid #ccc;
             width: 200px;
         }
         .buttonGroup {
@@ -43,7 +43,7 @@
             font-size: 16px;
             font-weight: bold;
             background: #eee;
-            border: 1px solid black;
+            border: 1px solid #ccc;
             cursor: pointer;
             margin: 0 10px 0 0;
         }
@@ -58,27 +58,47 @@
         table {
             border-collapse: collapse;
             width: 100%;
-            border: 1px solid black;
+            border: 1px solid #ccc;
             margin: 20px 0 0 0;
+            overflow: hidden;
+            background: white;
+            font-size: 14px;
         }
         th, td {
-            border: 1px solid black;
-            padding: 10px;
+            border: 1px solid #ccc;
+            padding: 12px 10px;
             text-align: center;
             cursor: pointer;
+            position: relative;
         }
         th {
-            background: #eee;
+            background: #A92222; 
+            color: white;
             font-weight: bold;
+        }
+        td:hover::after, th:hover::after {
+            content: "";
+            position: absolute;
+            background-color: rgba(0,0,0,0.04);
+            left: 0;
+            top: -5000px;
+            height: 10000px;
+            width: 100%;
+            z-index: -1;
+        }
+        tr:hover td {
+            background-color: rgba(0,0,0,0.04);
         }
         .timeLabel {
             font-weight: bold;
-            background: #eee;
+            background: #f9f9f9;
+            color: black;
             cursor: default;
             white-space: nowrap;
         }
         .selectedCell {
-            background: #ccc;
+            background: #9BCA64 !important; 
+            color: black;
         }
     </style>
 </head>
@@ -86,7 +106,7 @@
 
 <div class="controls">
     <div class="instructionText">
-        <strong>Instructions:</strong> Please press the specific cells corresponding to the exact times you already have classes. Essentially mimic your current schedule exactly as it is shown in your MyMapua portal. Once finished, click the save button below the table.
+        <strong>Instructions:</strong> Please press the specific cells corresponding to the exact times you already have classes. Essentially mimic your current schedule exactly as it is shown in your MyMapua portal. Once finished click the save button below the table. If you need to edit your time table, just input your name and student number, then press "Load My Schedule", then proceed with editing. Do not forget to press "Save My Schedule".
     </div>
 
     <label for="firstNameInput">First Name:</label>
