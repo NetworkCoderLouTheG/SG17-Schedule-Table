@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Team Schedule Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: white;
+            color: black;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            border: 1px solid black;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background: #eee;
+            font-weight: bold;
+        }
+        .timeLabel {
+            font-weight: bold;
+            background: #eee;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Aggregated Team Schedule Viewer</h1>
+
+<table id="scheduleTable">
+    <thead>
+        <tr id="headerRow">
+            <th>Schedule</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+</table>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAupSRY6wNLrdxloEK-u6P__8b0QVspwik",
+        authDomain: "sg17-table-schedule.firebaseapp.com",
+        projectId: "sg17-table-schedule",
+        storageBucket: "sg17-table-schedule.firebasestorage.app",
+        messagingSenderId: "1009267087171",
+        appId: "1:1009267087171:web:83589ebc488d7ed48f01f6"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const times = [
+        '07:00AM to 08:10AM',
+        '08:10AM to 09:20AM',
+        '09:20AM to 10:30AM',
+        '10:30AM to 11:40AM',
+        '11:40AM to 12:50PM',
+        '12:50PM to 02:00PM',
+        '02:00PM to 03:10PM',
+        '03:10PM to 04:20PM',
+        '04:20PM to 05:30PM',
+        '05:30PM to 06:40PM',
+        '06:40PM to 07:50PM',
+        '07:50PM to 09:00PM'
+    ];
+    
+    let aggregatedData = {};
+
+    function initializeTable() {
+        const headerRow = document.getElementById('headerRow');
+        for (let i = 0; i < days.length; i++) {
+            const th = document.createElement('th');
+            th.textContent = days[i];
+            headerRow.appendChild(th);
+        }
+
+        const tableBody = document.getElementById('tableBody');
+        for (let i = 0; i < times.length; i++) {
+            const timeLabelString = times[i];
+            const tr = document.createElement('tr');
+            
+            const timeCell = document.createElement('td');
+            timeCell.className = 'timeLabel';
+            timeCell.textContent = timeLabelString;
+            tr.appendChild(timeCell);
+
+            for (let j = 0; j < days.length; j++) {
+                const day = days[j];
+                const td = document.createElement('td');
+                const sanitizedTime = timeLabelString.replace(/[: ]/g, '');
+                const cellId = day + '_' + sanitizedTime;
+                td.id = cellId;
+                
+                aggregatedData[cellId] = [];
+                tr.appendChild(td);
+            }
+            tableBody.appendChild(tr);
+        }
+    }
+
+    function renderDashboard() {
+        for (const cellId in aggregatedData) {
+            const td = document.getElementById(cellId);
+            if (!td) continue;
+
+            const usersInSlot = aggregatedData[cellId];
+            const count = usersInSlot.length;
+            
+            if (count > 0) {
+                td.title = "Busy: " + usersInSlot.join(', ');
+            } else {
+                td.title = "Everyone is free";
+            }
+
+            if (count === 0) {
+                td.style.backgroundColor = 'transparent';
+            } else if (count === 1) {
+                td.style.backgroundColor = '#d4edda'; 
+            } else if (count === 2) {
+                td.style.backgroundColor = '#a3cfbb'; 
+            } else if (count >= 3) {
+                td.style.backgroundColor = '#75b798'; 
+            }
+        }
+    }
+
+    initializeTable();
+
+    const schedulesCollection = collection(db, "team_schedules");
+    onSnapshot(schedulesCollection, (snapshot) => {
+        for (const key in aggregatedData) {
+            aggregatedData[key] = [];
+        }
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const identifier = data.firstName + " " + data.surname + " (" + data.studentNumber + ")";
+            const busySlots = data.busySlots || [];
+            
+            for (let i = 0; i < busySlots.length; i++) {
+                const slotId = busySlots[i];
+                if (aggregatedData[slotId]) {
+                    aggregatedData[slotId].push(identifier);
+                }
+            }
+        });
+        
+        renderDashboard();
+    });
+</script>
+</body>
+</html>
