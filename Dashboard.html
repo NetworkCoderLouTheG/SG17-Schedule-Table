@@ -10,13 +10,20 @@
             background: white;
             color: black;
         }
-        h1, h2 {
+        .headerArea {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin: 0 0 20px 0;
+        }
+        h1, h2 {
+            margin: 0;
             font-size: 24px;
         }
         h2 {
             margin-top: 40px;
             font-size: 20px;
+            margin-bottom: 20px;
         }
         table {
             border-collapse: collapse;
@@ -41,6 +48,19 @@
             color: black;
             white-space: nowrap;
         }
+        .actionBtn {
+            background: #A92222;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .actionBtn:hover {
+            background: #801a1a;
+        }
         .deleteBtn {
             background: #A92222;
             color: white;
@@ -57,7 +77,10 @@
 </head>
 <body>
 
-<h1>Aggregated Team Schedule Viewer</h1>
+<div class="headerArea">
+    <h1>Aggregated Team Schedule Viewer</h1>
+    <button id="exportButton" class="actionBtn">Export to Spreadsheet</button>
+</div>
 
 <table id="scheduleTable">
     <thead>
@@ -177,6 +200,40 @@
             }
         }
     }
+
+    function exportToSpreadsheet() {
+        let csvRows = [];
+        let headers = ["Schedule", ...days];
+        csvRows.push(headers.join(","));
+
+        for (let i = 0; i < times.length; i++) {
+            let row = ['"' + times[i] + '"'];
+            for (let j = 0; j < days.length; j++) {
+                let sanitizedTime = times[i].replace(/[: ]/g, '');
+                let cellId = days[j] + '_' + sanitizedTime;
+                let users = aggregatedData[cellId] || [];
+                let cellText = users.length > 0 ? users.join(', ') : "";
+                
+                cellText = cellText.replace(/"/g, '""');
+                row.push('"' + cellText + '"');
+            }
+            csvRows.push(row.join(","));
+        }
+
+        const csvString = csvRows.join("\r\n");
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", "Mapua_Team_Schedule.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    document.getElementById('exportButton').onclick = exportToSpreadsheet;
 
     initializeTable();
 
