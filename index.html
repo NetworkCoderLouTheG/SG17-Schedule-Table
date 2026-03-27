@@ -35,6 +35,9 @@
             border: 1px solid black;
             width: 200px;
         }
+        .buttonGroup {
+            margin: 10px 0 0 0;
+        }
         button {
             padding: 10px 20px;
             font-size: 16px;
@@ -42,7 +45,7 @@
             background: #eee;
             border: 1px solid black;
             cursor: pointer;
-            margin: 10px 0 0 0;
+            margin: 0 10px 0 0;
         }
         button:hover {
             background: #ddd;
@@ -56,6 +59,7 @@
             border-collapse: collapse;
             width: 100%;
             border: 1px solid black;
+            margin: 20px 0 0 0;
         }
         th, td {
             border: 1px solid black;
@@ -94,6 +98,11 @@
     <label for="studentNumberInput">Student Number:</label>
     <input type="text" id="studentNumberInput" placeholder="e.g., S123456">
     <br>
+    
+    <div class="buttonGroup">
+        <button id="loadButton">Load My Schedule</button>
+    </div>
+    <span id="statusMessage"></span>
 </div>
 
 <table id="scheduleTable">
@@ -106,12 +115,13 @@
     </tbody>
 </table>
 
-<button id="saveButton">Save My Schedule</button>
-<span id="statusMessage"></span>
+<div class="buttonGroup">
+    <button id="saveButton">Save My Schedule</button>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAupSRY6wNLrdxloEK-u6P__8b0QVspwik",
@@ -185,6 +195,54 @@
         }
     }
 
+    document.getElementById('loadButton').onclick = async function() {
+        const studentNumber = document.getElementById('studentNumberInput').value.trim();
+        const statusMessage = document.getElementById('statusMessage');
+
+        if (studentNumber === '') {
+            statusMessage.textContent = 'Please enter your student number to load your schedule.';
+            statusMessage.style.color = 'red';
+            return;
+        }
+
+        statusMessage.textContent = 'Loading your classes from the database...';
+        statusMessage.style.color = 'blue';
+
+        try {
+            const docRef = doc(db, "team_schedules", studentNumber);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('firstNameInput').value = data.firstName || '';
+                document.getElementById('surnameInput').value = data.surname || '';
+
+                localSelections.forEach(cellId => {
+                    const cellElement = document.getElementById(cellId);
+                    if (cellElement) cellElement.classList.remove('selectedCell');
+                });
+                localSelections.clear();
+
+                const savedSlots = data.busySlots || [];
+                savedSlots.forEach(cellId => {
+                    localSelections.add(cellId);
+                    const cellElement = document.getElementById(cellId);
+                    if (cellElement) cellElement.classList.add('selectedCell');
+                });
+
+                statusMessage.textContent = 'Schedule loaded successfully! You can make changes and save again.';
+                statusMessage.style.color = 'green';
+            } else {
+                statusMessage.textContent = 'No schedule was found for this student number.';
+                statusMessage.style.color = 'red';
+            }
+        } catch (error) {
+            console.error(error);
+            statusMessage.textContent = 'An error occurred while loading your data.';
+            statusMessage.style.color = 'red';
+        }
+    };
+
     document.getElementById('saveButton').onclick = async function() {
         const firstName = document.getElementById('firstNameInput').value.trim();
         const surname = document.getElementById('surnameInput').value.trim();
@@ -197,7 +255,7 @@
             return;
         }
 
-        statusMessage.textContent = 'Saving your schedule...';
+        statusMessage.textContent = 'Saving your schedule to the server...';
         statusMessage.style.color = 'blue';
 
         const userData = {
