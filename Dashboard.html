@@ -10,28 +10,48 @@
             background: white;
             color: black;
         }
-        h1 {
+        h1, h2 {
             margin: 0 0 20px 0;
             font-size: 24px;
+        }
+        h2 {
+            margin-top: 40px;
+            font-size: 20px;
         }
         table {
             border-collapse: collapse;
             width: 100%;
-            border: 1px solid black;
+            border: 1px solid #ccc;
+            background: white;
+            font-size: 14px;
         }
         th, td {
-            border: 1px solid black;
-            padding: 10px;
+            border: 1px solid #ccc;
+            padding: 12px 10px;
             text-align: center;
         }
         th {
-            background: #eee;
+            background: #A92222; 
+            color: white;
             font-weight: bold;
         }
         .timeLabel {
             font-weight: bold;
-            background: #eee;
+            background: #f9f9f9;
+            color: black;
             white-space: nowrap;
+        }
+        .deleteBtn {
+            background: #A92222;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .deleteBtn:hover {
+            background: #801a1a;
         }
     </style>
 </head>
@@ -49,9 +69,22 @@
     </tbody>
 </table>
 
+<h2>Manage Entries</h2>
+<table id="entriesTable">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Student Number</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="entriesBody">
+    </tbody>
+</table>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAupSRY6wNLrdxloEK-u6P__8b0QVspwik",
@@ -131,12 +164,16 @@
 
             if (count === 0) {
                 td.style.backgroundColor = 'transparent';
+                td.style.color = 'black';
             } else if (count === 1) {
                 td.style.backgroundColor = '#d4edda'; 
+                td.style.color = 'black';
             } else if (count === 2) {
                 td.style.backgroundColor = '#a3cfbb'; 
+                td.style.color = 'black';
             } else if (count >= 3) {
-                td.style.backgroundColor = '#75b798'; 
+                td.style.backgroundColor = '#9BCA64'; 
+                td.style.color = 'black';
             }
         }
     }
@@ -145,13 +182,19 @@
 
     const schedulesCollection = collection(db, "team_schedules");
     onSnapshot(schedulesCollection, (snapshot) => {
+        
         for (const key in aggregatedData) {
             aggregatedData[key] = [];
         }
 
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const identifier = data.firstName + " " + data.surname + " (" + data.studentNumber + ")";
+        const entriesBody = document.getElementById('entriesBody');
+        entriesBody.innerHTML = ''; 
+
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const studentNumber = docSnap.id;
+            const fullName = data.firstName + " " + data.surname;
+            const identifier = fullName + " (" + studentNumber + ")";
             const busySlots = data.busySlots || [];
             
             for (let i = 0; i < busySlots.length; i++) {
@@ -160,6 +203,37 @@
                     aggregatedData[slotId].push(identifier);
                 }
             }
+
+            const tr = document.createElement('tr');
+            
+            const nameTd = document.createElement('td');
+            nameTd.textContent = fullName;
+            tr.appendChild(nameTd);
+
+            const numTd = document.createElement('td');
+            numTd.textContent = studentNumber;
+            tr.appendChild(numTd);
+
+            const actionTd = document.createElement('td');
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'deleteBtn';
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = async function() {
+                const isConfirmed = confirm('Are you sure you want to completely remove the schedule for ' + fullName + '?');
+                if (isConfirmed) {
+                    try {
+                        const docRef = doc(db, "team_schedules", studentNumber);
+                        await deleteDoc(docRef);
+                    } catch (error) {
+                        console.error(error);
+                        alert('There was a problem deleting this entry. Please try again.');
+                    }
+                }
+            };
+            actionTd.appendChild(deleteButton);
+            tr.appendChild(actionTd);
+
+            entriesBody.appendChild(tr);
         });
         
         renderDashboard();
